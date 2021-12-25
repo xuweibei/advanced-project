@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <div>{{name}}</div>
+      <span>{{age}}</span>
+    </div>
+    <script src="./vue.js"></script>
+    <script>
+      const vm = new Vue({
+        data() {
+          return {
+            arr: [1, 2, { o: 2 }],
+            name: 11,
+            age: 22,
+            obj: { p: 2 },
+          };
+        },
+        el: '#app',
+        // template: '<div id="a">{{age}}</div>',
+      });
+      // console.log(vm);
+      // vm.arr[2].o;
+    </script>
+  </body>
+</html>
