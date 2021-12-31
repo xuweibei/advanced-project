@@ -9,11 +9,11 @@ export function initState(vm) {
 function proxy(vm, target, key) {
   Object.defineProperty(vm, key, {
     get() {
-      console.log(key, 2);
+      // console.log(key, 2);
       return vm[target][key];
     },
     set(newValue) {
-      vm[target][key] = value;
+      vm[target][key] = newValue;
     },
   });
 }

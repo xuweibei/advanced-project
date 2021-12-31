@@ -1,4 +1,5 @@
 import { newArrayProto } from './array';
+import Dep from './dep';
 
 class Observer {
   constructor(data) {
@@ -22,8 +23,12 @@ class Observer {
 }
 export function defineReactive(target, key, value) {
   observe(value);
+  let dep = new Dep();
   Object.defineProperty(target, key, {
     get() {
+      if (Dep.target) {
+        dep.depend();
+      }
       console.log(key);
       return value;
     },
@@ -31,6 +36,7 @@ export function defineReactive(target, key, value) {
       if (newValue === value) return;
       observe(value);
       value = newValue;
+      dep.notify();
     },
   });
 }

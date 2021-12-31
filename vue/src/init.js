@@ -1,5 +1,6 @@
 import { initState } from './state';
 import { compileToFunction } from './compiler';
+import { mountComponent } from './lifecycle';
 
 export function initMixin(Vue) {
   Vue.prototype._init = function (options) {
@@ -29,5 +30,7 @@ export function initMixin(Vue) {
         ops.render = render;
       }
     }
+    console.log(ops.render, '水电费即可');
+    mountComponent(vm, el);
   };
 }
