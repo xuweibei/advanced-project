@@ -1,13 +1,16 @@
 import { initState } from './state';
 import { compileToFunction } from './compiler';
-import { mountComponent } from './lifecycle';
+import { callHook, mountComponent } from './lifecycle';
+import { mergeOptions } from './utils';
 
 export function initMixin(Vue) {
   Vue.prototype._init = function (options) {
     const vm = this;
-    vm.$options = options;
+    vm.$options = mergeOptions(this.constructor.options, options);
+    callHook(vm,'beforeCreate')
     //初始化状态
     initState(vm);
+    callHook(vm,'create')
     if (options.el) {
       vm.$mount(options.el);
     }
@@ -30,7 +33,7 @@ export function initMixin(Vue) {
         ops.render = render;
       }
     }
-    console.log(ops.render, '水电费即可');
+    // console.log(ops.render, '水电费即可');
     mountComponent(vm, el);
   };
 }

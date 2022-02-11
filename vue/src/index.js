@@ -1,12 +1,15 @@
 // const { initMixin } = require('./init');
-import { initMixin } from './init';
-import { initLifeCycle } from './lifecycle';
-import { nextTick } from './observe/watcher';
+import { initGlobalAPI } from './globalAPI'
+import { initMixin } from './init'
+import { initLifeCycle } from './lifecycle'
+import { initStateMixin } from './state'
 
 function Vue(options) {
-  this._init(options);
+  this._init(options)
 }
-Vue.prototype.$nextTick = nextTick;
-initMixin(Vue);
-initLifeCycle(Vue);
-export default Vue;
+initMixin(Vue)
+initLifeCycle(Vue)
+initGlobalAPI(Vue)
+initStateMixin(Vue)
+
+export default Vue

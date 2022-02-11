@@ -1,7 +1,6 @@
 let id = 0;
 export default class Dep {
   constructor() {
-    console.log(id, 'id');
     this.id = id++;
     this.subs = [];
   }
@@ -17,3 +16,17 @@ export default class Dep {
 }
 
 Dep.target = null;
+
+
+let stack = [];
+
+export function pushTarget(watcher){
+  stack.push(watcher);
+  Dep.target = watcher;
+}
+
+
+export function popTarget(){
+  stack.pop();
+  Dep.target = stack[stack.length-1]
+}

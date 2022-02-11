@@ -4,6 +4,54 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 })(this, (function () { 'use strict';
 
+  var strats = {};
+  var LIFECYCLE = ['beforeCreate', 'create'];
+  LIFECYCLE.forEach(function (hook) {
+    strats[hook] = function (p, c) {
+      if (c) {
+        if (p) {
+          return p.concat(c);
+        } else {
+          return [c];
+        }
+      } else {
+        return p;
+      }
+    };
+  });
+  function mergeOptions(parent, child) {
+    var options = {};
+
+    for (var key in parent) {
+      mergeField(key);
+    }
+
+    for (var _key in child) {
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+
+    function mergeField(key) {
+      if (strats[key]) {
+        options[key] = strats[key](parent[key], child[key]);
+      } else {
+        options[key] = child[key] || parent[key];
+      }
+    }
+
+    return options;
+  }
+
+  function initGlobalAPI(Vue) {
+    Vue.options = {};
+
+    Vue.mixin = function (mixin) {
+      this.options = mergeOptions(this.options, mixin);
+      return this;
+    };
+  }
+
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
@@ -98,6 +146,48 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
+  var id$1 = 0;
+
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+
+      this.id = id$1++;
+      this.subs = [];
+    }
+
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        Dep.target.addDep(this);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (item) {
+          return item.update();
+        });
+      }
+    }]);
+
+    return Dep;
+  }();
+  Dep.target = null;
+  var stack = [];
+  function pushTarget(watcher) {
+    stack.push(watcher);
+    Dep.target = watcher;
+  }
+  function popTarget() {
+    stack.pop();
+    Dep.target = stack[stack.length - 1];
+  }
+
   var oldArrayProto = Array.prototype;
   var newArrayProto = Object.create(oldArrayProto);
   var methods = ['push', 'pop', 'shift', 'unshift', 'reverse', 'sort', 'splice'];
@@ -131,40 +221,6 @@
       return result;
     };
   });
-
-  var id$1 = 0;
-
-  var Dep = /*#__PURE__*/function () {
-    function Dep() {
-      _classCallCheck(this, Dep);
-
-      console.log(id$1, 'id');
-      this.id = id$1++;
-      this.subs = [];
-    }
-
-    _createClass(Dep, [{
-      key: "depend",
-      value: function depend() {
-        Dep.target.addDep(this);
-      }
-    }, {
-      key: "addSub",
-      value: function addSub(watcher) {
-        this.subs.push(watcher);
-      }
-    }, {
-      key: "notify",
-      value: function notify() {
-        this.subs.forEach(function (item) {
-          return item.update();
-        });
-      }
-    }]);
-
-    return Dep;
-  }();
-  Dep.target = null;
 
   var Observer = /*#__PURE__*/function () {
     function Observer(data) {
@@ -212,7 +268,6 @@
           dep.depend();
         }
 
-        console.log(key);
         return value;
       },
       set: function set(newValue) {
@@ -236,11 +291,162 @@
     return new Observer(data);
   }
 
+  var id = 0;
+
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, exprOrFn, options, cb) {
+      _classCallCheck(this, Watcher);
+
+      this.id = id++;
+      this.renderWatcher = options;
+
+      if (typeof exprOrFn === 'string') {
+        this.getter = function () {
+          return vm[exprOrFn];
+        };
+      } else {
+        this.getter = exprOrFn;
+      }
+
+      this.deps = [];
+      this.cb = cb;
+      this.depsId = new Set();
+      this.lazy = options.lazy;
+      this.dirty = this.lazy;
+      this.user = options.user;
+      this.vm = vm;
+      this.value = !this.lazy && this.get();
+    }
+
+    _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+
+        if (!this.depsId.has(id)) {
+          this.depsId.add(id);
+          this.deps.push(dep);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "evaluate",
+      value: function evaluate() {
+        this.value = this.get();
+        this.dirty = false;
+      }
+    }, {
+      key: "get",
+      value: function get() {
+        pushTarget(this);
+        var value = this.getter.call(this.vm);
+        popTarget();
+        return value;
+      }
+    }, {
+      key: "depend",
+      value: function depend() {
+        var i = this.deps.length;
+
+        while (i--) {
+          this.deps[i].depend();
+        }
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        if (this.lazy) {
+          this.dirty = true;
+        } else {
+          queueWatcher(this);
+        }
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        var oldValue = this.value;
+        var newValue = this.get();
+
+        if (this.user) {
+          this.cb.call(this.vm, newValue, oldValue);
+        }
+      }
+    }]);
+
+    return Watcher;
+  }();
+  var queue = [];
+  var has = {};
+  var pending = false;
+
+  function flushSchedulerQueue() {
+    var flushQueue = queue.slice(0);
+    queue = [];
+    has = {};
+    pending = false;
+    flushQueue.forEach(function (q) {
+      return q.run();
+    });
+  }
+
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+
+    if (!has[id]) {
+      queue.push(watcher);
+      has[id] = true;
+
+      if (!pending) {
+        pending = true;
+        nextTick(flushSchedulerQueue);
+      }
+    }
+  }
+
+  var callback = [];
+  var waiting = false;
+
+  function flushCallbacks() {
+    var cbs = callback.slice(0);
+    waiting = false;
+    callback = [];
+    cbs.forEach(function (item) {
+      return item();
+    });
+  }
+
+  if (Promise) ; else if (MutationObserver) {
+    var observer = new MutationObserver(flushCallbacks);
+    var textNode = document.createTextNode(1);
+    observer.observe(textNode, {
+      characterData: true
+    });
+  } else if (setImmediate) ; else ;
+
+  function nextTick(cb) {
+    callback.push(cb);
+
+    if (!waiting) {
+      waiting = true;
+      setTimeout(function () {
+        flushCallbacks();
+      }, 0);
+    }
+  }
+
   function initState(vm) {
     var opts = vm.$options;
 
     if (opts.data) {
       initData(vm);
+    }
+
+    if (opts.computed) {
+      initComputed(vm);
+    }
+
+    if (opts.watch) {
+      initWatch(vm);
     }
   }
 
@@ -266,6 +472,79 @@
     for (var i in data) {
       proxy(vm, '_data', i);
     }
+  }
+
+  function initComputed(vm) {
+    var computed = vm.$options.computed;
+    var watchers = vm._computedWatchers = {};
+
+    for (var key in computed) {
+      var userDef = computed[key];
+      var fn = typeof userDef === 'function' ? userDef : userDef.get;
+      watchers[key] = new Watcher(vm, fn, {
+        lazy: true
+      });
+      defineComponted(vm, key, userDef);
+    }
+  }
+
+  function defineComponted(target, key, userDef) {
+    var setter = userDef.set || function () {};
+
+    Object.defineProperty(target, key, {
+      get: createComputedGetter(key),
+      set: setter
+    });
+  }
+
+  function createComputedGetter(key) {
+    return function () {
+      var watcher = this._computedWatchers[key];
+
+      if (watcher.dirty) {
+        watcher.evaluate();
+      }
+
+      if (Dep.target) {
+        watcher.depend();
+      }
+
+      return watcher.value;
+    };
+  }
+
+  function initWatch(vm) {
+    var watch = vm.$options.watch;
+
+    for (var key in watch) {
+      var handler = watch[key];
+
+      if (Array.isArray(handler)) {
+        for (var i = 0; i < handler.length; i++) {
+          createWatcher(vm, key, handler[key]);
+        }
+      } else {
+        createWatcher(vm, key, handler);
+      }
+    }
+  }
+
+  function createWatcher(vm, key, handler) {
+    if (typeof handler === 'string') {
+      handler = vm[handler];
+    }
+
+    return vm.$watch(key, handler);
+  }
+
+  function initStateMixin(Vue) {
+    Vue.prototype.$nextTick = nextTick;
+
+    Vue.prototype.$watch = function (exprOrFn, cb, options) {
+      new Watcher(this, exprOrFn, {
+        user: true
+      }, cb);
+    };
   }
 
   var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*";
@@ -511,113 +790,8 @@
     };
   }
 
-  var id = 0;
-
-  var Watcher = /*#__PURE__*/function () {
-    function Watcher(vm, fn, options) {
-      _classCallCheck(this, Watcher);
-
-      this.id = id++;
-      console.log(this.id, '跨境电商');
-      this.renderWatcher = options;
-      this.getter = fn;
-      this.deps = [];
-      this.depsId = new Set();
-      this.get();
-    }
-
-    _createClass(Watcher, [{
-      key: "addDep",
-      value: function addDep(dep) {
-        var id = dep.id;
-
-        if (!this.depsId.has(id)) {
-          this.depsId.add(id);
-          this.deps.push(dep);
-          dep.addSub(this);
-        }
-      }
-    }, {
-      key: "get",
-      value: function get() {
-        Dep.target = this;
-        this.getter();
-        Dep.target = null;
-      }
-    }, {
-      key: "update",
-      value: function update() {
-        queueWatcher(this);
-      }
-    }, {
-      key: "run",
-      value: function run() {
-        console.log(111);
-        this.get();
-      }
-    }]);
-
-    return Watcher;
-  }();
-  var queue = [];
-  var has = {};
-  var pending = false;
-
-  function flushSchedulerQueue() {
-    var flushQueue = queue.slice(0);
-    queue = [];
-    has = {};
-    pending = false;
-    flushQueue.forEach(function (q) {
-      return q.run();
-    });
-  }
-
-  function queueWatcher(watcher) {
-    var id = watcher.id;
-
-    if (!has[id]) {
-      queue.push(watcher);
-      has[id] = true;
-
-      if (!pending) {
-        pending = true;
-        console.log(22);
-        nextTick(flushSchedulerQueue);
-      }
-    }
-  }
-
-  var callback = [];
-  var waiting = false;
-
-  function flushCallbacks() {
-    var cbs = callback.slice(0);
-    waiting = false;
-    callback = [];
-    console.log(cbs, '绝对是李开复');
-    cbs.forEach(function (item) {
-      return item();
-    });
-  }
-
-  if (Promise) ; else if (MutationObserver) {
-    var observer = new MutationObserver(flushCallbacks);
-    var textNode = document.createTextNode(1);
-    observer.observe(textNode, {
-      characterData: true
-    });
-  } else if (setImmediate) ; else ;
-
-  function nextTick(cb) {
-    callback.push(cb);
-
-    if (!waiting) {
-      waiting = true;
-      setTimeout(function () {
-        flushCallbacks();
-      }, 0);
-    }
+  function isSameVnode(vnode1, vnode2) {
+    return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key;
   }
 
   function createElm(vnode) {
@@ -628,7 +802,7 @@
 
     if (typeof tag === 'string') {
       vnode.el = document.createElement(tag);
-      patchProps(vnode.el, data);
+      patchProps(vnode.el, {}, data);
       children.forEach(function (child) {
         createElm(child) && vnode.el.appendChild(createElm(child));
       });
@@ -638,19 +812,34 @@
 
     return vnode.el;
   }
+  function patchProps(el) {
+    var oldProps = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var props = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    var oldStyles = oldProps.style || {};
+    var newStyles = props.style || {};
 
-  function patchProps(el, props) {
-    for (var key in props) {
-      if (key === 'style') {
+    for (var key in oldStyles) {
+      if (!newStyles[key]) {
+        el.style[key] = '';
+      }
+    }
+
+    for (var _key in oldProps) {
+      if (!props[_key]) {
+        el.removeAttribute(_key);
+      }
+    }
+
+    for (var _key2 in props) {
+      if (_key2 === 'style') {
         for (var styleName in props.style) {
           el.style[styleName] = props.style[styleName];
         }
       } else {
-        el.setAttribute(key, props[key]);
+        el.setAttribute(_key2, props[_key2]);
       }
     }
   }
-
   function patch(oldVNode, vnode) {
     var isRealElement = oldVNode.nodeType;
 
@@ -661,15 +850,144 @@
       parentElm.insertBefore(newElm, elm.nextSibling);
       parentElm.removeChild(elm);
       return newElm;
+    } else {
+      return patchVnode(oldVNode, vnode);
     }
+  }
+
+  function patchVnode(oldVNode, vnode) {
+    if (!isSameVnode(oldVNode, vnode)) {
+      //如果节点不一样
+      var _el = createElm(vnode);
+
+      oldVNode.el.parentNode.replaceChild(_el, oldVNode.el);
+      return _el;
+    }
+
+    var el = vnode.el = oldVNode.el;
+
+    if (!oldVNode.tag) {
+      //文本的情况
+      if (oldVNode.text !== vnode.text) {
+        oldVNode.el.textContent = vnode.text;
+      }
+    } //节点一样，尽量复用
+
+
+    patchProps(el, oldVNode.data, vnode.data);
+    var oldChildren = oldVNode.children || [];
+    var newChildren = vnode.children || [];
+
+    if (oldChildren.length > 0 && newChildren.length > 0) {
+      updateChildren(el, oldChildren, newChildren);
+    } else if (newChildren.length > 0) {
+      mountChildren(el, newChildren);
+    } else if (oldChildren > 0) {
+      el.innerHTML = '';
+    }
+
+    return el;
+  }
+
+  function mountChildren(el, newChildren) {
+    for (var i = 0; i < newChildren.length; i++) {
+      var child = newChildren[i];
+      el.appendChild(createElm(child));
+    }
+  }
+
+  function updateChildren(el, oldChildren, newChildren) {
+    var oldStartIndex = 0;
+    var newStartIndex = 0;
+    var oldEndIndex = oldChildren.length - 1;
+    var newEndIndex = newChildren.length - 1;
+    var oldStartVnode = oldChildren[0];
+    var newStartVnode = newChildren[0];
+    var oldEndVnode = oldChildren[oldEndIndex];
+    var newEndVnode = newChildren[newEndIndex];
+
+    function makeIndexByKey(children) {
+      var map = {};
+      children.forEach(function (item, index) {
+        map[item.key] = index;
+      });
+      return map;
+    }
+
+    var map = makeIndexByKey(oldChildren);
+
+    while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+      if (!oldStartVnode) {
+        oldStartVnode = oldChildren[++oldStartIndex];
+      } else if (!oldEndVnode) {
+        oldEndVnode = oldChildren[--oldEndIndex];
+      } else if (isSameVnode(oldStartVnode, newStartVnode)) {
+        patchVnode(oldStartVnode, newStartVnode);
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      } else if (isSameVnode(oldEndVnode, newEndVnode)) {
+        patchVnode(oldEndVnode, newEndVnode);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else if (isSameVnode(oldEndVnode, newStartVnode)) {
+        patchVnode(oldEndVnode, newStartVnode);
+        el.insertBefore(oldEndVnode.el, oldStartVnode.el);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      } else if (isSameVnode(oldStartVnode, newEndVnode)) {
+        patchVnode(oldStartVnode, newEndVnode);
+        el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else {
+        var moveIndex = map[newStartVnode.key];
+
+        if (moveIndex !== undefined) {
+          var moveVnode = oldChildren[moveIndex];
+          el.insertBefore(moveVnode.el, oldStartVnode.el);
+          oldChildren[moveIndex] = undefined;
+          patchVnode(moveVnode, newStartVnode);
+        } else {
+          el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+        }
+
+        newStartVnode = newChildren[++newStartIndex];
+      }
+    }
+
+    if (newStartIndex <= newEndIndex) {
+      for (var i = newStartIndex; i <= newEndIndex; i++) {
+        var childEl = createElm(newChildren[i]);
+        var anchor = newChildren[newEndIndex + 1] ? newChildren[newEndIndex + 1].el : null;
+        el.insertBefore(childEl, anchor);
+      }
+    }
+
+    if (oldStartIndex <= oldEndIndex) {
+      for (var _i = oldStartIndex; _i <= oldEndIndex; _i++) {
+        if (oldChildren[_i]) {
+          var _childEl = oldChildren[_i].el;
+          el.removeChild(_childEl);
+        }
+      }
+    }
+
+    console.log(oldStartVnode, newStartVnode, oldEndVnode, newEndVnode);
   }
 
   function initLifeCycle(Vue) {
     Vue.prototype._update = function (vnode) {
-      console.log('update', vnode);
+      // console.log('update', vnode);
       var vm = this;
       var el = vm.$el;
-      vm.$el = patch(el, vnode);
+      var prevVnode = el._vnode;
+      vm._vnode = vnode;
+
+      if (prevVnode) {
+        vm.$el = patch(prevVnode, vnode);
+      } else {
+        vm.$el = patch(el, vnode);
+      }
     };
 
     Vue.prototype._c = function () {
@@ -699,13 +1017,21 @@
 
     new Watcher(vm, updateComponent, true);
   }
+  function callHook(vm, name) {
+    var handlers = vm.$options[name];
+    handlers && handlers.forEach(function (item) {
+      return item();
+    });
+  }
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
-      vm.$options = options; //初始化状态
+      vm.$options = mergeOptions(this.constructor.options, options);
+      callHook(vm, 'beforeCreate'); //初始化状态
 
       initState(vm);
+      callHook(vm, 'create');
 
       if (options.el) {
         vm.$mount(options.el);
@@ -732,9 +1058,9 @@
           var render = compileToFunction(template);
           ops.render = render;
         }
-      }
+      } // console.log(ops.render, '水电费即可');
 
-      console.log(ops.render, '水电费即可');
+
       mountComponent(vm, el);
     };
   }
@@ -745,9 +1071,10 @@
     this._init(options);
   }
 
-  Vue.prototype.$nextTick = nextTick;
   initMixin(Vue);
   initLifeCycle(Vue);
+  initGlobalAPI(Vue);
+  initStateMixin(Vue);
 
   return Vue;
 

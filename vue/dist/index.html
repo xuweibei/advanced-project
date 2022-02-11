@@ -11,6 +11,10 @@
     </div>
     <script src="./vue.js"></script>
     <script>
+      Vue.mixin({
+        create(){
+        }
+      })
       // const app = document.getElementById('app');
       const vm = new Vue({
         data() {
@@ -22,6 +26,8 @@
           };
         },
         el: '#app',
+        create(){
+        }
         // template: '<div id="a">{{age}}</div>',
       });
       // setTimeout(() => {
@@ -30,9 +36,6 @@
       // }, 1000);
       vm.name = 90;
 
-      vm.$nextTick(() => {
-        console.log(app.innerHTML, '靠的就是');
-      });
       // vm.arr[2].o;
     </script>
   </body>

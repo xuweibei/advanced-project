@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app" style="color: red; background-color: yellow">
+      {{fullname}}
+      {{fullname}}
+      {{fullname}}
+    </div>
+    <script src="./vue.js"></script>
+    <script>
+      const vm = new Vue({
+        el:'#app',
+        data:{
+          firstname:'zhu',
+          lastname:'feng'
+        },
+        computed:{
+          fullname:{
+            get(){
+              console.log('run',this);
+              return this.firstname + this.lastname
+            },
+            set(value){
+              console.log(value)
+            }
+          }
+        }
+      })
+      setTimeout(()=>{
+       vm.firstname = 111
+      },1000)
+    </script>
+  </body>
+</html>

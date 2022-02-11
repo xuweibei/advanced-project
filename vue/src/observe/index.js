@@ -29,7 +29,6 @@ export function defineReactive(target, key, value) {
       if (Dep.target) {
         dep.depend();
       }
-      console.log(key);
       return value;
     },
     set(newValue) {
