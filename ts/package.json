@@ -4,7 +4,7 @@
   "description": "ts 是 js 的超级，包含了 es 最新的语法，在此基础上做了类型校验",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "rollup -cw"
   },
   "keywords": [],
   "author": "",
