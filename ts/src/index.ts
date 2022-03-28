@@ -54,7 +54,7 @@ function getArea(obj: ICircle | ISquare) {
 
 //void 类型 函数不写返回值就是void，
 
-function sum(): undefined {
+function sum3(): undefined {
   return undefined;
 }
 
