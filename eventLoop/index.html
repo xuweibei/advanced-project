@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<script src="./1.js"></script>
+	<script src="./2.js"></script>
+</head>
+<body>
+	宏任务:
+		1.UI/交互事件
+		2.I/O
+		3.setTimeout
+		4.setInterval
+		5.setImmediate
+		6.requestAnimationFramc
+	微任务:
+		1.process.nextTick
+		2.Promise
+	当你在一个js文件中做eventloop的时候，这个js文件就是一个宏任务。
+	所以会执行这里面的宏任务代码。执行结束之后，才会执行微任务。微任务结束，如果还有宏任务则继续执行宏任务。
+	async await:
+	 async执行的是同步的代码和效果，但是await要注意，执行到这里的时候，会执行await同行里面的代码，然后不再往下，
+	 而是跳出这个函数，到外面执行其他还未执行的同步代码。等其他同步代码执行结束再回到这await往下执行。
+	如果想做到一个宏任务比同步的代码先执行的效果，可以将其分为两个文件，就像本文件的测试一样。
+	这个链接讲的详细，以后忘了可以多看看
+	https://baijiahao.baidu.com/s?id=1703679443706780423&wfr=spider&for=pc
+</body>
+</html>
