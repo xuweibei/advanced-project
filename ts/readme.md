@@ -16,3 +16,37 @@ let arr:[string,number,boolean] = ['1',2,true]
 可以使用 push，但是不能 arr[3]这样进行更改，规定
 
 枚举类型（普通枚举）（常量枚举）（异构枚举）
+
+普通枚举
+enum Sring{
+	lala='haha',
+	haha = 'haha'
+}
+
+如果设置了某一个为字符串后，其他的fileds也必须要赋值，否则会报错
+
+常量枚举
+
+enum Color {
+	Red,
+	Blue
+}
+默认上面的值从0开始，往下累计加1；
+Color.Red = 0;
+Color.Blue = 1;
+
+如果设置了初始值，比如 
+enum Color{
+	Red = 1;
+	Blue;
+}
+这时Color.Red = 1;Color.Blue = 2;
+
+异构枚举
+enum Yi{
+	lala = 'lala',
+	Red=0
+}
+
+里面有上面两种类型的值就是异构枚举
+

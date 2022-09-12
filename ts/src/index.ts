@@ -66,4 +66,8 @@ function sum1(): void {
 
 function create(tar: object) {}
 create({ a: 1 });
-console.log(222);
+// console.log(222);
+
+
+let arr:any[] = [1,false,'str']
+arr[1] = 100
