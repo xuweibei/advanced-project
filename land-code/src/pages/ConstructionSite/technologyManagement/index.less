@@ -1,0 +1,102 @@
+.leftArea {
+  width: 22%;
+  height: 100%;
+  background-color: rgba(157, 99, 109, 50%);
+  z-index: 2;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: yellow;
+}
+
+.rightArea {
+  width: 22%;
+  height: 100%;
+  background-color: rgba(157, 99, 109, 50%);
+  z-index: 3;
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: yellow;
+}
+.pointLocationSetting {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+.setRoomImg {
+  position: relative;
+  width: 100%;
+}
+
+.roomPoint {
+  position: absolute;
+  z-index: 999;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  user-select: none;
+}
+.roomPointContainer {
+  display: flex;
+  flex-wrap: wrap;
+  max-height: 500px;
+  overflow-y: scroll;
+}
+.setPointContainer {
+  position: relative;
+}
+.settingPointImg {
+    width: 100%;
+}
+.robotPointItem {
+    margin: 11px 20px 11px 20px;
+    width:5.2083vw;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    background-color: grey;
+    text-align: center;
+}
+.pointMark{
+    width: 1.0417vw;
+    height: 1.0417vw;
+    background-color: red;
+    border-radius: 50%;
+}
+.pointName{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5.2083vw;
+    height: 30px;
+    color: #000000;
+    border: 1rpx solid rgba(255, 255, 255);
+    text-align: center;
+    padding: 2px 3px;
+    background-color: #ffffff;
+}
+.uploadButton{
+  width: 60px;
+  height: 60px;
+  border: 1px #f1f1f1;
+  border-style: dashed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.uploadButton:hover{
+  opacity: 0.5;
+  background-color: #f3f3f3;
+}
+.uploadVideo{
+  width: 20px;
+  height: 15px;
+}

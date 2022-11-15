@@ -1,0 +1,44 @@
+.imageSelector {
+  display: inline-block;
+  width: 120px;
+  height: 40px;
+  border: none;
+  text-align: center;
+  border-radius: 4px;
+  margin-right: 8px;
+
+  .hideInput {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    cursor: pointer !important;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  .uploadButton {
+    background: #1890ff;
+    width: 120px;
+    height: 35px;
+    cursor: pointer;
+    line-height: 35px;
+    border-radius: 2px;
+  }
+
+  .text {
+    margin: 0 0 4px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+  }
+
+  .previewImg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: center/cover no-repeat;
+  }
+}

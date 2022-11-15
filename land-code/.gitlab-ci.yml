@@ -1,0 +1,254 @@
+default:
+  tags:
+    - node
+  interruptible: true
+
+variables:
+  PROJECT_NAME: "newhome"
+
+stages:
+  - build
+  - deploy
+
+inside-builder:
+  stage: build
+  only:
+    - tags
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths:
+      - node_modules/
+  script:
+    - npm i
+    - npm run build:inside
+    - tar -cvzf $PROJECT_NAME-$CI_COMMIT_REF_SLUG.tar.gz $PROJECT_NAME
+  artifacts:
+    paths:
+      - $PROJECT_NAME-$CI_COMMIT_REF_SLUG.tar.gz
+    expire_in: 1 day
+
+dev-builder:
+  stage: build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths:
+      - node_modules/
+  script:
+    - npm i
+    - npm run build:dev
+    - tar -cvzf $PROJECT_NAME.tar.gz $PROJECT_NAME
+  artifacts:
+    paths:
+      - $PROJECT_NAME.tar.gz
+    expire_in: 1 day
+
+dev-deployer:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  before_script:
+    ##
+    ## Install ssh-agent if not already installed, it is required by Docker.
+    ## (change apt-get to yum if you use an RPM-based image)
+    ##
+    - "command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )"
+
+    ##
+    ## Run ssh-agent (inside the build environment)
+    ##
+    - eval $(ssh-agent -s)
+    ##
+    ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+    ## We're using tr to fix line endings which makes ed25519 keys work
+    ## without extra base64 encoding.
+    ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+    ##
+    - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add -
+
+    ##
+    ## Create the SSH directory and give it the right permissions
+    ##
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    ##
+    ## Alternatively, use ssh-keyscan to scan the keys of your private server.
+    ## Replace example.com with your private server's domain name. Repeat that
+    ## command if you have more than one server to connect to.
+    ##
+    - ssh-keyscan $DEV_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+    ##
+    ## You can optionally disable host key checking. Be aware that by adding that
+    ## you are susceptible to man-in-the-middle attacks.
+    ## WARNING: Use this only with the Docker executor, if you use it with shell
+    ## you will overwrite your user's SSH config.
+    ##
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" >> ~/.ssh/config'
+  variables: 
+    REMOTE_PATH: /home/$DEPLOY_USER/www
+  script:
+    - scp $PROJECT_NAME.tar.gz $DEPLOY_USER@$DEV_HOST:$REMOTE_PATH
+    - > 
+      ssh -t $DEPLOY_USER@$DEV_HOST "cd $REMOTE_PATH && 
+                                  rm -rf $PROJECT_NAME &&
+                                  tar -xzvf $PROJECT_NAME.tar.gz && 
+                                  rm -rf $PROJECT_NAME.tar.gz"
+  environment:
+    name: dev
+    url: https://dev.newbest.com.cn/$PROJECT_NAME/
+
+
+uat-builder:
+  stage: build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "uat"'
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths:
+      - node_modules/
+  script:
+    - npm i
+    - npm run build:uat
+    - tar -cvzf $PROJECT_NAME.tar.gz $PROJECT_NAME
+  artifacts:
+    paths:
+      - $PROJECT_NAME.tar.gz
+    expire_in: 1 day
+
+uat-deployer:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "uat"'
+      when: manual
+  before_script:
+    ##
+    ## Install ssh-agent if not already installed, it is required by Docker.
+    ## (change apt-get to yum if you use an RPM-based image)
+    ##
+    - "command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )"
+
+    ##
+    ## Run ssh-agent (inside the build environment)
+    ##
+    - eval $(ssh-agent -s)
+    ##
+    ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+    ## We're using tr to fix line endings which makes ed25519 keys work
+    ## without extra base64 encoding.
+    ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+    ##
+    - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add -
+
+    ##
+    ## Create the SSH directory and give it the right permissions
+    ##
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    ##
+    ## Alternatively, use ssh-keyscan to scan the keys of your private server.
+    ## Replace example.com with your private server's domain name. Repeat that
+    ## command if you have more than one server to connect to.
+    ##
+    - ssh-keyscan $UAT_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+    ##
+    ## You can optionally disable host key checking. Be aware that by adding that
+    ## you are susceptible to man-in-the-middle attacks.
+    ## WARNING: Use this only with the Docker executor, if you use it with shell
+    ## you will overwrite your user's SSH config.
+    ##
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" >> ~/.ssh/config'
+  variables: 
+    REMOTE_PATH: /home/$DEPLOY_USER/www
+  script:
+    - scp $PROJECT_NAME.tar.gz $DEPLOY_USER@$UAT_HOST:$REMOTE_PATH
+    - > 
+      ssh -t $DEPLOY_USER@$UAT_HOST "cd $REMOTE_PATH && 
+                                  rm -rf $PROJECT_NAME &&
+                                  tar -xzvf $PROJECT_NAME.tar.gz && 
+                                  rm -rf $PROJECT_NAME.tar.gz"
+  environment:
+    name: uat
+    url: https://uat.newbest.com.cn/$PROJECT_NAME/
+
+
+prod-builder:
+  stage: build
+  only:
+    - tags
+  cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths:
+      - node_modules/
+  script:
+    - npm i
+    - npm run build:prod
+    - tar -cvzf $PROJECT_NAME.tar.gz $PROJECT_NAME
+  artifacts:
+    paths:
+      - $PROJECT_NAME.tar.gz
+    expire_in: 1 day
+
+prod-deployer:
+  stage: deploy
+  only:
+    - tags
+  when: manual
+  before_script:
+    ##
+    ## Install ssh-agent if not already installed, it is required by Docker.
+    ## (change apt-get to yum if you use an RPM-based image)
+    ##
+    - "command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )"
+
+    ##
+    ## Run ssh-agent (inside the build environment)
+    ##
+    - eval $(ssh-agent -s)
+    ##
+    ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+    ## We're using tr to fix line endings which makes ed25519 keys work
+    ## without extra base64 encoding.
+    ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+    ##
+    - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add -
+
+    ##
+    ## Create the SSH directory and give it the right permissions
+    ##
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    ##
+    ## Alternatively, use ssh-keyscan to scan the keys of your private server.
+    ## Replace example.com with your private server's domain name. Repeat that
+    ## command if you have more than one server to connect to.
+    ##
+    - ssh-keyscan $PROD_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+    ##
+    ## You can optionally disable host key checking. Be aware that by adding that
+    ## you are susceptible to man-in-the-middle attacks.
+    ## WARNING: Use this only with the Docker executor, if you use it with shell
+    ## you will overwrite your user's SSH config.
+    ##
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" >> ~/.ssh/config'
+  variables: 
+    REMOTE_PATH: /home/$DEPLOY_USER/www
+  script:
+    - scp $PROJECT_NAME.tar.gz $DEPLOY_USER@$PROD_HOST:$REMOTE_PATH
+    - > 
+      ssh -t $DEPLOY_USER@$PROD_HOST "cd $REMOTE_PATH && 
+                                  rm -rf $PROJECT_NAME &&
+                                  tar -xzvf $PROJECT_NAME.tar.gz && 
+                                  rm -rf $PROJECT_NAME.tar.gz"
+  environment:
+    name: prod
+    url: https://newbest.com.cn/$PROJECT_NAME/

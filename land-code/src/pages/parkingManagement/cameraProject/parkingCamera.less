@@ -1,0 +1,122 @@
+.realtime {
+  margin: -24px;
+  display: flex;
+  flex-direction: row;
+}
+
+.playArea {
+  flex: 1;
+  padding: 24px;
+
+  .link {
+    display: flex;
+    justify-content: flex-end;
+    margin: 4px 0 6px;
+  }
+
+  .cameraInfo {
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+.cameraList {
+  width: 280px;
+  background: #fff;
+
+  :global {
+    .ant-form-item {
+      .filter {
+        display: flex;
+        margin-bottom: 16px;
+
+        .marginRight {
+          margin-right: 10px;
+        }
+      }
+
+      // .record {
+      //   padding: 24px 8px 8px;
+      //   border-radius: 5px;
+      //   background: #fff;
+      //   text-align: center;
+      //   cursor: pointer;
+
+      //   img {
+      //     width: 100px;
+      //     height: 100px;
+      //     margin-bottom: 8px;
+      //   }
+
+      //   .time {
+      //     display: flex;
+      //     justify-content: space-between;
+      //   }
+      // }
+
+      .playerWrapper {
+        margin: 12px;
+        height: 600px;
+      }
+      margin-bottom: 16px;
+    }
+  }
+
+  .header {
+    height: 40px;
+    line-height: 40px;
+    background: #deb25c;
+    text-align: center;
+    position: relative;
+
+    .title {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .clear {
+      position: absolute;
+      right: 8px;
+      color: rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+    }
+  }
+
+  .wrapper {
+    padding: 24px;
+  }
+}
+
+.filter {
+  display: flex;
+  margin-bottom: 16px;
+
+  .marginRight {
+    margin-right: 10px;
+  }
+}
+
+.record {
+  padding: 24px 8px 8px;
+  border-radius: 5px;
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
+
+  img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 8px;
+  }
+
+  .time {
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+.playerWrapper {
+  margin: 12px;
+  height: 600px;
+}

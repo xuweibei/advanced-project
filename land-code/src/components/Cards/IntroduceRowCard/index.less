@@ -1,0 +1,21 @@
+.content {
+  display: flex;
+  justify-content: space-around; 
+  
+  & > :not(:last-child){
+    border-right: 1px solid #EEF0F2;
+  }
+
+  & > *{
+    flex:1;
+    text-align: center;
+  }
+
+   :global {
+    // .ant-statistic-content {
+    //   text-align: center;
+    //   font-weight: 500;
+    //   font-size: 30px;    
+    
+  }
+}

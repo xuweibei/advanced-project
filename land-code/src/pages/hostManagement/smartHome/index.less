@@ -1,0 +1,113 @@
+.title {
+  background: rgb(121, 242, 157);
+}
+.allProjectTitle {
+  margin-bottom: 24px;
+  font-weight: 600;
+  font-size: 20px;
+}
+.cardBox {
+  position: relative;
+  width: 100%;
+}
+.updateDelete {
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+  z-index: 9;
+}
+.cardMassage {
+  width: 50%;
+}
+.cardCenter {
+  width: 25%;
+}
+.cardRight {
+  width: 25%;
+}
+.header {
+  width: 100%;
+  margin-top: 20px;
+}
+.contentTitle {
+  margin-bottom: 0.5em;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.noData {
+  width: 100%;
+  height: 200px;
+  line-height: 200px;
+  text-align: center;
+}
+.project {
+  position: relative;
+
+  .projectName {
+    display: flex;
+    justify-content: space-between;
+    margin-left: -10px;
+
+    .projectSpan {
+      color: #999999;
+      font-weight: 100;
+      font-size: 12px;
+    }
+
+    .titleName {
+      width: 60%;
+      color: #333333;
+      font-weight: 600;
+      font-size: 15px;
+      border-left: #1790ff 4px solid;
+      padding-left: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .data {
+    .name {
+      display: flex;
+      justify-content: space-between;
+      color: #333333;
+      font-weight: 600;
+      font-size: 12px;
+
+      span {
+        color: #666666;
+        font-weight: 100;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .meta {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    color: rgba(0, 0, 0, 0.45);
+
+    .date {
+      float: right;
+    }
+  }
+}
+
+.headerAdd {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  flex-direction: row-reverse;
+}
+
+.marginBottom {
+  margin-bottom: 24px;
+}
+.page {
+  display: flex;
+  justify-content: center;
+}
