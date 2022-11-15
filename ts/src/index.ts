@@ -71,3 +71,7 @@ create({ a: 1 });
 
 let arr:any[] = [1,false,'str']
 arr[1] = 100
+
+
+// never   是其他类型（包括null和undefined） 的子类型，代表从不会出现的值，这意味着声明为never类型
+// 的变量只能被never类型所赋值，在函数中它通常表现为抛出异常或无法执行到终止点（例如无限循环）
